@@ -34,6 +34,7 @@ import android.os.Trace;
 import android.util.Size;
 import android.util.TypedValue;
 import android.view.Display;
+import android.view.Surface;
 
 import org.tensorflow.ext.classifier.Classifier;
 import org.tensorflow.ext.classifier.TensorFlowMultiBoxDetector;
@@ -162,8 +163,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
         LOGGER.i("Sensor orientation: %d, Screen orientation: %d", rotation, screenOrientation);
 
-        sensorOrientation = rotation + screenOrientation;
-
+        sensorOrientation = (screenOrientation == Surface.ROTATION_90) ? screenOrientation : (rotation + screenOrientation);
+        //sensorOrientation = screenOrientation;
         LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
         rgbBytes = new int[previewWidth * previewHeight];
         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
@@ -368,5 +369,12 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     @Override
     protected void processImageRGBbytes(int[] rgbBytes) {
 
+    }
+
+
+    public static Bitmap rotateBitmap(Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
 }
