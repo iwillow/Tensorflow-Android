@@ -42,11 +42,13 @@ import android.view.WindowManager;
 import android.widget.Toast;
 import java.nio.ByteBuffer;
 
-import org.tensorflow.demo.env.ImageUtils;
-import org.tensorflow.demo.env.Logger;
+import org.tensorflow.ext.env.ImageUtils;
+import org.tensorflow.ext.env.Logger;
+import org.tensorflow.ext.view.OverlayView;
+import org.tensorflow.ext.view.ResultsView;
 
 // Explicit import needed for internal Google builds.
-import org.tensorflow.demo.R;
+
 
 public abstract class CameraActivity extends Activity implements OnImageAvailableListener, Camera.
         PreviewCallback {

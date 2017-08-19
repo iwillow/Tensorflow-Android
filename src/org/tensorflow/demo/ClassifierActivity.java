@@ -21,6 +21,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
@@ -28,10 +29,13 @@ import android.util.Size;
 import android.util.TypedValue;
 import android.view.Display;
 
-import org.tensorflow.demo.OverlayView.DrawCallback;
-import org.tensorflow.demo.env.BorderedText;
-import org.tensorflow.demo.env.ImageUtils;
-import org.tensorflow.demo.env.Logger;
+import org.tensorflow.ext.classifier.Classifier;
+import org.tensorflow.ext.classifier.TensorFlowImageClassifier;
+import org.tensorflow.ext.view.OverlayView.DrawCallback;
+import org.tensorflow.ext.env.BorderedText;
+import org.tensorflow.ext.env.ImageUtils;
+import org.tensorflow.ext.env.Logger;
+import org.tensorflow.ext.view.ResultsView;
 
 import java.util.List;
 import java.util.Vector;
@@ -72,7 +76,7 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
     private static final boolean MAINTAIN_ASPECT = true;
 
     private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
-
+    // private static final Size DESIRED_PREVIEW_SIZE = new Size(1920, 1080);
 
     private Integer sensorOrientation;
     private Classifier classifier;
@@ -117,8 +121,10 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
         previewHeight = size.getHeight();
 
         final Display display = getWindowManager().getDefaultDisplay();
+        Point point = new Point();
+        display.getSize(point);
         final int screenOrientation = display.getRotation();
-
+        LOGGER.i("screen width: %d, Screen height: %d", point.x, point.y);
         LOGGER.i("Sensor orientation: %d, Screen orientation: %d", rotation, screenOrientation);
 
         sensorOrientation = rotation + screenOrientation;

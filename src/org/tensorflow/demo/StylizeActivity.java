@@ -28,14 +28,9 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.hardware.Camera;
-import android.media.Image;
-import android.media.Image.Plane;
-import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.os.Trace;
 import android.util.Size;
 import android.util.TypedValue;
 import android.view.Display;
@@ -55,13 +50,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Vector;
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
-import org.tensorflow.demo.OverlayView.DrawCallback;
-import org.tensorflow.demo.env.BorderedText;
-import org.tensorflow.demo.env.ImageUtils;
-import org.tensorflow.demo.env.Logger;
+import org.tensorflow.ext.view.OverlayView.DrawCallback;
+import org.tensorflow.ext.env.BorderedText;
+import org.tensorflow.ext.env.ImageUtils;
+import org.tensorflow.ext.env.Logger;
 
 // Explicit import needed for internal Google builds.
-import org.tensorflow.demo.R;
+
 
 /**
  * Sample activity that stylizes the camera preview according to "A Learned Representation For

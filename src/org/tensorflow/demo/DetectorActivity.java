@@ -39,12 +39,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
-import org.tensorflow.demo.OverlayView.DrawCallback;
-import org.tensorflow.demo.env.BorderedText;
-import org.tensorflow.demo.env.ImageUtils;
-import org.tensorflow.demo.env.Logger;
-import org.tensorflow.demo.tracking.MultiBoxTracker;
-import org.tensorflow.demo.R;
+import org.tensorflow.ext.classifier.Classifier;
+import org.tensorflow.ext.classifier.TensorFlowMultiBoxDetector;
+import org.tensorflow.ext.classifier.TensorFlowYoloDetector;
+import org.tensorflow.ext.view.OverlayView;
+import org.tensorflow.ext.view.OverlayView.DrawCallback;
+import org.tensorflow.ext.env.BorderedText;
+import org.tensorflow.ext.env.ImageUtils;
+import org.tensorflow.ext.env.Logger;
+import org.tensorflow.ext.tracking.MultiBoxTracker;
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -86,6 +89,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private static final boolean MAINTAIN_ASPECT = USE_YOLO;
 
     private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
+    //private static final Size DESIRED_PREVIEW_SIZE = new Size(1920, 1080);
 
     private static final boolean SAVE_PREVIEW_BITMAP = false;
     private static final float TEXT_SIZE_DIP = 10;

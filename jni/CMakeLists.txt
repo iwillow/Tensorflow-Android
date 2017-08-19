@@ -35,14 +35,14 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \
                               -Wl,--allow-multiple-definition \
                               -Wl,--whole-archive -fPIE -v")
 
-file(GLOB_RECURSE tensorflow_demo_sources ${SAMPLE_SRC_DIR}/jni/*.*)
-add_library(tensorflow_demo SHARED
-            ${tensorflow_demo_sources})
-target_include_directories(tensorflow_demo PRIVATE
+file(GLOB_RECURSE tensorflow_ext_sources ${SAMPLE_SRC_DIR}/jni/*.*)
+add_library(tensorflow_ext SHARED
+            ${tensorflow_ext_sources})
+target_include_directories(tensorflow_ext PRIVATE
                            ${TF_SRC_ROOT}
                            ${CMAKE_SOURCE_DIR})
 
-target_link_libraries(tensorflow_demo
+target_link_libraries(tensorflow_ext
                       android
                       log
                       jnigraphics
