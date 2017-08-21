@@ -96,9 +96,32 @@ public class MultiBoxTracker {
 
     private int sensorOrientation;
     private Context context;
+    private boolean frontCamera;
 
     public MultiBoxTracker(final Context context) {
+      /*  this.context = context;
+        frontCamera = false;
+        for (final int color : COLORS) {
+            availableColors.add(color);
+        }
+
+        boxPaint.setColor(Color.RED);
+        boxPaint.setStyle(Style.STROKE);
+        boxPaint.setStrokeWidth(12.0f);
+        boxPaint.setStrokeCap(Cap.ROUND);
+        boxPaint.setStrokeJoin(Join.ROUND);
+        boxPaint.setStrokeMiter(100);
+
+        textSizePx =
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, context.getResources().getDisplayMetrics());
+        borderedText = new BorderedText(textSizePx);*/
+        this(context, false);
+    }
+
+    public MultiBoxTracker(final Context context, boolean frontCamera) {
         this.context = context;
+        this.frontCamera = frontCamera;
         for (final int color : COLORS) {
             availableColors.add(color);
         }
@@ -157,6 +180,10 @@ public class MultiBoxTracker {
         objectTracker.drawDebug(canvas, matrix);
     }
 
+    public void setFrontCamera(boolean frontCamera) {
+        this.frontCamera = frontCamera;
+    }
+
     public synchronized void trackResults(final List<Recognition> results, final byte[] frame, final long timestamp) {
         logger.i("Processing %d results from %d", results.size(), timestamp);
         processResults(timestamp, results, frame);
@@ -166,6 +193,7 @@ public class MultiBoxTracker {
         // TODO(andrewharp): This may not work for non-90 deg rotations.
         logger.i("draw at size %dx%d ;sensorOrientation:%d", frameWidth, frameHeight, sensorOrientation);
         final float multiplier;
+
         if (sensorOrientation == Surface.ROTATION_90) {//landscape
             multiplier = Math.min(canvas.getWidth() / (float) frameWidth, canvas.getHeight() / (float) frameHeight);
             frameToCanvasMatrix =
@@ -189,6 +217,7 @@ public class MultiBoxTracker {
         }
 
         for (final TrackedRecognition recognition : trackedObjects) {
+            logger.d("position:" + ((objectTracker != null) ? "getTrackedPositionInPreviewFrame" : "recognition.location"));
             final RectF trackedPos =
                     (objectTracker != null)
                             ? recognition.trackedObject.getTrackedPositionInPreviewFrame()
@@ -198,13 +227,25 @@ public class MultiBoxTracker {
             boxPaint.setColor(recognition.color);
 
             final float cornerSize = Math.min(trackedPos.width(), trackedPos.height()) / 8.0f;
-            canvas.drawRoundRect(trackedPos, cornerSize, cornerSize, boxPaint);
-
             final String labelString =
                     !TextUtils.isEmpty(recognition.title)
                             ? String.format("%s %.2f", recognition.title, recognition.detectionConfidence)
                             : String.format("%.2f", recognition.detectionConfidence);
-            borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.bottom, labelString);
+
+            if (frontCamera) {
+                final RectF f = new RectF();
+                final float length = sensorOrientation == Surface.ROTATION_90 ? frameWidth : frameHeight;
+                f.bottom = trackedPos.bottom;
+                f.top = trackedPos.top;
+                f.left = length - trackedPos.right;
+                f.right = f.left + trackedPos.width();
+                canvas.drawRoundRect(f, cornerSize, cornerSize, boxPaint);
+                borderedText.drawText(canvas, f.left + cornerSize, f.bottom, labelString);
+            } else {
+                canvas.drawRoundRect(trackedPos, cornerSize, cornerSize, boxPaint);
+                borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.bottom, labelString);
+            }
+
         }
     }
 

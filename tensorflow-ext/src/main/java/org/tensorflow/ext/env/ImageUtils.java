@@ -28,7 +28,7 @@ import java.io.FileOutputStream;
 public class ImageUtils {
   @SuppressWarnings("unused")
   private static final Logger LOGGER = new Logger();
-  
+
   static {
     try {
       System.loadLibrary("tensorflow_ext");
@@ -271,7 +271,6 @@ public class ImageUtils {
     if (applyRotation != 0) {
       // Translate so center of image is at origin.
       matrix.postTranslate(-srcWidth / 2.0f, -srcHeight / 2.0f);
-
       // Rotate around origin.
       matrix.postRotate(applyRotation);
     }

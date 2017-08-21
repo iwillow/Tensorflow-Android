@@ -25,6 +25,7 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.hardware.Camera;
 import android.media.Image;
 import android.media.Image.Plane;
 import android.media.ImageReader;
@@ -89,13 +90,13 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     private static final boolean MAINTAIN_ASPECT = USE_YOLO;
 
-    private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
-    //private static final Size DESIRED_PREVIEW_SIZE = new Size(1920, 1080);
+    //private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
+    private static final Size DESIRED_PREVIEW_SIZE = new Size(1920, 1080);
 
     private static final boolean SAVE_PREVIEW_BITMAP = false;
     private static final float TEXT_SIZE_DIP = 10;
 
-    private Integer sensorOrientation;
+    private int sensorOrientation;
 
     private Classifier detector;
 
@@ -131,7 +132,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         borderedText = new BorderedText(textSizePx);
         borderedText.setTypeface(Typeface.MONOSPACE);
 
-        tracker = new MultiBoxTracker(this);
+        tracker = new MultiBoxTracker(this, true);
 
         if (USE_YOLO) {
             detector =
@@ -164,7 +165,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         LOGGER.i("Sensor orientation: %d, Screen orientation: %d", rotation, screenOrientation);
 
         sensorOrientation = (screenOrientation == Surface.ROTATION_90) ? screenOrientation : (rotation + screenOrientation);
-        //sensorOrientation = screenOrientation;
+        //sensorOrientation = rotation + screenOrientation;
         LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
         rgbBytes = new int[previewWidth * previewHeight];
         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
@@ -239,6 +240,49 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     OverlayView trackingOverlay;
 
     @Override
+    public void onPreviewFrame(final byte[] bytes, final Camera camera) {
+        ++timestamp;
+        final long currTimestamp = timestamp;
+        if (computing) {
+            return;
+        }
+        computing = true;
+
+        try {
+            // Initialize the storage bitmaps once when the resolution is known.
+            if (rgbBytes == null) {
+                Camera.Size previewSize = camera.getParameters().getPreviewSize();
+                previewHeight = previewSize.height;
+                previewWidth = previewSize.width;
+                rgbBytes = new int[previewWidth * previewHeight];
+                onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 90);
+            }
+            ImageUtils.convertYUV420SPToARGB8888(bytes, rgbBytes, previewWidth, previewHeight, false);
+        } catch (final Exception e) {
+            LOGGER.e(e, "Exception!");
+            return;
+        }
+        postInferenceCallback = new Runnable() {
+            @Override
+            public void run() {
+                camera.addCallbackBuffer(bytes);
+            }
+        };
+        processImageRGBbytes(rgbBytes);
+        yuvBytes[0] = bytes;
+        tracker.onFrame(
+                previewWidth,
+                previewHeight,
+                previewWidth,
+                sensorOrientation,
+                yuvBytes[0],
+                timestamp);
+        trackingOverlay.postInvalidate();
+        process(currTimestamp);
+
+    }
+
+    @Override
     public void onImageAvailable(final ImageReader reader) {
         Image image = null;
 
@@ -296,7 +340,32 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             Trace.endSection();
             return;
         }
+        process(currTimestamp);
+        Trace.endSection();
+    }
 
+    @Override
+    protected int getLayoutId() {
+        return R.layout.camera_connection_fragment_tracking;
+    }
+
+    @Override
+    protected Size getDesiredPreviewFrameSize() {
+        return DESIRED_PREVIEW_SIZE;
+    }
+
+    @Override
+    public void onSetDebug(final boolean debug) {
+        detector.enableStatLogging(debug);
+    }
+
+    @Override
+    protected void processImageRGBbytes(int[] rgbBytes) {
+
+    }
+
+
+    private void process(final long currTimestamp) {
         rgbFrameBitmap.setPixels(rgbBytes, 0, previewWidth, 0, 0, previewWidth, previewHeight);
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
@@ -333,44 +402,25 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                             final RectF location = result.getLocation();
                             if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE) {
                                 canvas.drawRect(location, paint);
-
                                 cropToFrameTransform.mapRect(location);
                                 result.setLocation(location);
                                 mappedRecognitions.add(result);
                             }
                         }
 
+
                         tracker.trackResults(mappedRecognitions, luminance, currTimestamp);
                         trackingOverlay.postInvalidate();
 
                         requestRender();
                         computing = false;
+                        if (postInferenceCallback != null) {
+                            postInferenceCallback.run();
+                        }
                     }
                 });
 
-        Trace.endSection();
     }
-
-    @Override
-    protected int getLayoutId() {
-        return R.layout.camera_connection_fragment_tracking;
-    }
-
-    @Override
-    protected Size getDesiredPreviewFrameSize() {
-        return DESIRED_PREVIEW_SIZE;
-    }
-
-    @Override
-    public void onSetDebug(final boolean debug) {
-        detector.enableStatLogging(debug);
-    }
-
-    @Override
-    protected void processImageRGBbytes(int[] rgbBytes) {
-
-    }
-
 
     public static Bitmap rotateBitmap(Bitmap source, float angle) {
         Matrix matrix = new Matrix();

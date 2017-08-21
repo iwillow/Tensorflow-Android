@@ -61,7 +61,7 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
     private static final String PERMISSION_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
-    private boolean debug = true;
+    private boolean debug = false;
 
     private Handler handler;
     private HandlerThread handlerThread;
@@ -285,8 +285,8 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     private String chooseCamera() {
         final CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
-            String[] cameraIdList=manager.getCameraIdList();
-            LOGGER.d("cameraIdList:"+ TextUtils.join(", ", cameraIdList) );
+            String[] cameraIdList = manager.getCameraIdList();
+            LOGGER.d("cameraIdList:" + TextUtils.join(", ", cameraIdList));
             for (final String cameraId : cameraIdList) {
                 final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
                 // We don't use a front facing camera in this sample.
@@ -332,12 +332,12 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
                             getLayoutId(),
                             getDesiredPreviewFrameSize());
 
-            camera2Fragment.setCamera(cameraId);
+            camera2Fragment.setCamera("1");
             fragment = camera2Fragment;
         } else {
             fragment = new LegacyCameraConnectionFragment(this, getLayoutId());
         }
-
+        // Fragment fragment = new LegacyCameraConnectionFragment(this, getLayoutId());
         getFragmentManager()
                 .beginTransaction()
                 .replace(R.id.container, fragment)
