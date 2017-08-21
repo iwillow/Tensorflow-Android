@@ -132,7 +132,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         borderedText = new BorderedText(textSizePx);
         borderedText.setTypeface(Typeface.MONOSPACE);
 
-        tracker = new MultiBoxTracker(this, true);
+        tracker = new MultiBoxTracker(this, false);
 
         if (USE_YOLO) {
             detector =
@@ -422,9 +422,4 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     }
 
-    public static Bitmap rotateBitmap(Bitmap source, float angle) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(angle);
-        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
-    }
 }

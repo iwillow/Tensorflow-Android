@@ -315,7 +315,7 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     }
 
     protected void setFragment() {
-        String cameraId = chooseCamera();
+       /* String cameraId = chooseCamera();
         Fragment fragment;
         if (useCamera2API) {
             CameraConnectionFragment camera2Fragment =
@@ -332,12 +332,12 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
                             getLayoutId(),
                             getDesiredPreviewFrameSize());
 
-            camera2Fragment.setCamera("1");
+            camera2Fragment.setCamera(cameraId);
             fragment = camera2Fragment;
         } else {
             fragment = new LegacyCameraConnectionFragment(this, getLayoutId());
-        }
-        // Fragment fragment = new LegacyCameraConnectionFragment(this, getLayoutId());
+        }*/
+        Fragment fragment = new LegacyCameraConnectionFragment(this, getLayoutId());
         getFragmentManager()
                 .beginTransaction()
                 .replace(R.id.container, fragment)
