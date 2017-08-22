@@ -35,6 +35,7 @@ import org.tensorflow.ext.env.BorderedText;
 import org.tensorflow.ext.env.ImageUtils;
 import org.tensorflow.ext.env.Logger;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -97,6 +98,14 @@ public class MultiBoxTracker {
     private int sensorOrientation;
     private Context context;
     private boolean frontCamera;
+    private boolean drawAllResults;
+    private List<OnDrawRectListener> onDrawRectCallbacks = new ArrayList<>();
+
+
+    public static interface OnDrawRectListener {
+
+        public void onDrawRect(RectF rectF);
+    }
 
     public MultiBoxTracker(final Context context) {
       /*  this.context = context;
@@ -116,12 +125,13 @@ public class MultiBoxTracker {
                 TypedValue.applyDimension(
                         TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, context.getResources().getDisplayMetrics());
         borderedText = new BorderedText(textSizePx);*/
-        this(context, false);
+        this(context, false, true);
     }
 
-    public MultiBoxTracker(final Context context, boolean frontCamera) {
+    public MultiBoxTracker(final Context context, boolean frontCamera, boolean drawAllResults) {
         this.context = context;
         this.frontCamera = frontCamera;
+        this.drawAllResults = drawAllResults;
         for (final int color : COLORS) {
             availableColors.add(color);
         }
@@ -137,6 +147,10 @@ public class MultiBoxTracker {
                 TypedValue.applyDimension(
                         TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, context.getResources().getDisplayMetrics());
         borderedText = new BorderedText(textSizePx);
+    }
+
+    public void addDrawRectListener(OnDrawRectListener listener) {
+        onDrawRectCallbacks.add(listener);
     }
 
     private Matrix getFrameToCanvasMatrix() {
@@ -184,6 +198,10 @@ public class MultiBoxTracker {
         this.frontCamera = frontCamera;
     }
 
+    public void setDrawAllResults(boolean drawAllResults) {
+        this.drawAllResults = drawAllResults;
+    }
+
     public synchronized void trackResults(final List<Recognition> results, final byte[] frame, final long timestamp) {
         logger.i("Processing %d results from %d", results.size(), timestamp);
         processResults(timestamp, results, frame);
@@ -215,9 +233,20 @@ public class MultiBoxTracker {
                             sensorOrientation,
                             false);
         }
+        if (drawAllResults) {
+            for (final TrackedRecognition recognition : trackedObjects) {
+                drawTrackedRecognition(canvas, recognition);
+            }
+        } else {
+            TrackedRecognition recognition = findMaxConfidenceTrackedRecognition(trackedObjects);
+            if (recognition != null) {
+                drawTrackedRecognition(canvas, recognition);
+            }
+        }
+/*
 
         for (final TrackedRecognition recognition : trackedObjects) {
-            logger.d("position:" + ((objectTracker != null) ? "getTrackedPositionInPreviewFrame" : "recognition.location"));
+            drawTrackedRecognition(canvas, recognition);
             final RectF trackedPos =
                     (objectTracker != null)
                             ? recognition.trackedObject.getTrackedPositionInPreviewFrame()
@@ -246,6 +275,66 @@ public class MultiBoxTracker {
                 borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.bottom, labelString);
             }
 
+        }
+*/
+
+
+    }
+
+    private TrackedRecognition findMaxConfidenceTrackedRecognition(final List<TrackedRecognition> list) {
+        if (list != null && !list.isEmpty()) {
+            TrackedRecognition trackedRecognition = list.get(0);
+            float detectionConfidence = trackedRecognition.detectionConfidence;
+            for (int i = 1; i < list.size(); i++) {
+                if (list.get(i).detectionConfidence > detectionConfidence) {
+                    trackedRecognition = list.get(i);
+                    detectionConfidence = trackedRecognition.detectionConfidence;
+                }
+
+            }
+            return trackedRecognition;
+        }
+        return null;
+    }
+
+    private void drawTrackedRecognition(final Canvas canvas, final TrackedRecognition recognition) {
+        logger.d("position:" + ((objectTracker != null) ? "getTrackedPositionInPreviewFrame" : "recognition.location"));
+        final RectF trackedPos =
+                (objectTracker != null)
+                        ? recognition.trackedObject.getTrackedPositionInPreviewFrame()
+                        : new RectF(recognition.location);
+
+        getFrameToCanvasMatrix().mapRect(trackedPos);
+        boxPaint.setColor(recognition.color);
+
+        final float cornerSize = Math.min(trackedPos.width(), trackedPos.height()) / 8.0f;
+        final String labelString =
+                !TextUtils.isEmpty(recognition.title)
+                        ? String.format("%s %.2f", recognition.title, recognition.detectionConfidence)
+                        : String.format("%.2f", recognition.detectionConfidence);
+
+        if (frontCamera) {
+            final RectF f = new RectF();
+            final float length = sensorOrientation == Surface.ROTATION_90 ? frameWidth : frameHeight;
+            f.bottom = trackedPos.bottom;
+            f.top = trackedPos.top;
+            f.left = length - trackedPos.right;
+            f.right = f.left + trackedPos.width();
+            canvas.drawRoundRect(f, cornerSize, cornerSize, boxPaint);
+            borderedText.drawText(canvas, f.left + cornerSize, f.bottom, labelString);
+            if (onDrawRectCallbacks != null && !onDrawRectCallbacks.isEmpty()) {
+                for (OnDrawRectListener listener : onDrawRectCallbacks) {
+                    listener.onDrawRect(f);
+                }
+            }
+        } else {
+            canvas.drawRoundRect(trackedPos, cornerSize, cornerSize, boxPaint);
+            borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.bottom, labelString);
+            if (onDrawRectCallbacks != null && !onDrawRectCallbacks.isEmpty()) {
+                for (OnDrawRectListener listener : onDrawRectCallbacks) {
+                    listener.onDrawRect(trackedPos);
+                }
+            }
         }
     }
 
@@ -472,4 +561,5 @@ public class MultiBoxTracker {
                 recogToReplace != null ? recogToReplace.color : availableColors.poll();
         trackedObjects.add(trackedRecognition);
     }
+
 }
