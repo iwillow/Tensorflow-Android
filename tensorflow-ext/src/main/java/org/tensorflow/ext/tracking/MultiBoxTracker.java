@@ -107,6 +107,7 @@ public class MultiBoxTracker {
         public void onDrawRect(RectF rectF);
     }
 
+
     public MultiBoxTracker(final Context context) {
       /*  this.context = context;
         frontCamera = false;
@@ -149,8 +150,16 @@ public class MultiBoxTracker {
         borderedText = new BorderedText(textSizePx);
     }
 
+    public boolean containsListener(OnDrawRectListener listener) {
+        return onDrawRectCallbacks.contains(listener);
+    }
+
     public void addDrawRectListener(OnDrawRectListener listener) {
         onDrawRectCallbacks.add(listener);
+    }
+
+    public void removeDrawRectListener(OnDrawRectListener listener) {
+        onDrawRectCallbacks.remove(listener);
     }
 
     private Matrix getFrameToCanvasMatrix() {
