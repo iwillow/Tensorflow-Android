@@ -23,6 +23,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.hardware.Camera;
@@ -30,6 +31,7 @@ import android.media.Image;
 import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.os.Trace;
 import android.util.Size;
@@ -55,9 +57,9 @@ import java.util.Vector;
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
  * objects.
  */
-public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
+public class DetectorActivity extends CameraActivity implements OnImageAvailableListener, MultiBoxTracker.OnDrawRectListener {
     private static final Logger LOGGER = new Logger();
-
+    public static String TAG = DetectorActivity.class.getSimpleName();
     // Configuration values for the prepackaged multibox model.
     private static final int MB_INPUT_SIZE = 224;
     private static final int MB_IMAGE_MEAN = 128;
@@ -92,7 +94,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     //private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
     private static final Size DESIRED_PREVIEW_SIZE = new Size(1920, 1080);
-
+    //private static Size DESIRED_PREVIEW_SIZE;
     private static final boolean SAVE_PREVIEW_BITMAP = false;
     private static final float TEXT_SIZE_DIP = 10;
 
@@ -124,6 +126,12 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     private long lastProcessingTimeMs;
 
+    private volatile byte mLeftward;
+
+
+    private volatile byte mForward;
+
+
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
         final float textSizePx =
@@ -133,6 +141,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         borderedText.setTypeface(Typeface.MONOSPACE);
 
         tracker = new MultiBoxTracker(this, false, false);
+        tracker.addDrawRectListener(this);
 
         if (USE_YOLO) {
             detector =
@@ -164,6 +173,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
         LOGGER.i("Sensor orientation: %d, Screen orientation: %d", rotation, screenOrientation);
 
+        //sensorOrientation = (screenOrientation == Surface.ROTATION_90) ? screenOrientation : (rotation + screenOrientation);
         sensorOrientation = (screenOrientation == Surface.ROTATION_90) ? screenOrientation : (rotation + screenOrientation);
         //sensorOrientation = rotation + screenOrientation;
         LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
@@ -255,7 +265,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 previewHeight = previewSize.height;
                 previewWidth = previewSize.width;
                 rgbBytes = new int[previewWidth * previewHeight];
-                onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 90);
+                onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 0);
             }
             ImageUtils.convertYUV420SPToARGB8888(bytes, rgbBytes, previewWidth, previewHeight, false);
         } catch (final Exception e) {
@@ -279,6 +289,24 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 timestamp);
         trackingOverlay.postInvalidate();
         process(currTimestamp);
+
+    }
+
+    @Override
+    public synchronized void onResume() {
+        super.onResume();
+        if (tracker != null && !tracker.containsDrawRectListener(this)) {
+            tracker.addDrawRectListener(this);
+        }
+    }
+
+
+    @Override
+    public synchronized void onPause() {
+        super.onPause();
+        if (tracker != null) {
+            tracker.removeDrawRectListener(this);
+        }
 
     }
 
@@ -422,4 +450,36 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     }
 
+    @Override
+    public void onDrawRect(RectF rectF) {
+
+        float rectCenterX = (rectF.left + rectF.right) / 2;
+        if (Math.abs(rectCenterX - mScreenCenterX) < mMinMoveDistance) {
+            mLeftward = 0;
+        } else if (rectCenterX - mScreenCenterX > mMinMoveDistance) {
+            mLeftward = 20;
+        } else if (rectCenterX - mScreenCenterX < -mMinMoveDistance) {
+            mLeftward = -20;
+        }
+        if (rectF.width() > rectF.height()) {
+            if (rectF.width() >= mScreenWidth * 2 / 3) {//过大
+                mForward = -20;//后退
+            } else if (rectF.width() > mScreenWidth / 3 && rectF.width() < mScreenWidth * 2 / 3) {
+                mForward = 0;
+            } else {
+                mForward = 20;
+            }
+
+        } else {
+            if (rectF.height() > mScreenHeight) {
+                mForward = -20;//后退
+            } else if (rectF.height() <= mScreenHeight && rectF.height() > mScreenHeight * 0.85) {
+                mForward = 0;
+            } else {
+                mForward = 20;
+            }
+        }
+
+        LOGGER.d("Leftward:" + mLeftward + ";Forward:" + mForward);
+    }
 }

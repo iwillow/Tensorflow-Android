@@ -59,14 +59,14 @@ public class LegacyCameraConnectionFragment extends Fragment {
     /**
      * Conversion from screen rotation to JPEG orientation.
      */
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+   /* private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);
         ORIENTATIONS.append(Surface.ROTATION_180, 270);
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
+    }*/
 
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
@@ -82,11 +82,11 @@ public class LegacyCameraConnectionFragment extends Fragment {
                     camera = Camera.open(index);
 
                     try {
-                        Camera.Parameters parameters = camera.getParameters();
-                        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                        // Camera.Parameters parameters = camera.getParameters();
+                        //parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
 
-                        camera.setDisplayOrientation(90);
-                        camera.setParameters(parameters);
+                        //camera.setDisplayOrientation(90);
+                        //camera.setParameters(parameters);
                         camera.setPreviewTexture(texture);
                     } catch (IOException exception) {
                         camera.release();
@@ -97,7 +97,7 @@ public class LegacyCameraConnectionFragment extends Fragment {
                     int bufferSize = s.height * s.width * 3 / 2;
                     camera.addCallbackBuffer(new byte[bufferSize]);
 
-                    textureView.setAspectRatio(s.height, s.width);
+                    //textureView.setAspectRatio(s.height, s.width);
 
                     camera.startPreview();
                 }

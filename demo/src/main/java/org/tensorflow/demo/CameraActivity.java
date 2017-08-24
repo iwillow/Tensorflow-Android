@@ -22,6 +22,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -80,12 +81,18 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     protected byte[][] yuvBytes = new byte[3][];
     protected int yRowStride;
 
+    protected float mScreenWidth;
+    protected float mScreenHeight;
+    protected float mScreenCenterX;
+    protected float mScreenCenterY;
+    protected float mMinMoveDistance;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         LOGGER.d("onCreate " + this);
         super.onCreate(null);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
+        initDefaultSize();
         setContentView(R.layout.activity_camera);
 
         if (hasPermission()) {
@@ -93,6 +100,16 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
         } else {
             requestPermission();
         }
+    }
+
+    private void initDefaultSize() {
+        Point point = new Point();
+        getWindowManager().getDefaultDisplay().getSize(point);
+        mScreenWidth = point.x;
+        mScreenHeight = point.y;
+        mScreenCenterX = mScreenWidth / 2;
+        mScreenCenterY = mScreenHeight / 2;
+        mMinMoveDistance = Math.max(mScreenWidth, mScreenHeight) * 0.1f;
     }
 
     /**
@@ -315,7 +332,7 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     }
 
     protected void setFragment() {
-       /* String cameraId = chooseCamera();
+      /*  String cameraId = chooseCamera();
         Fragment fragment;
         if (useCamera2API) {
             CameraConnectionFragment camera2Fragment =
@@ -332,7 +349,7 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
                             getLayoutId(),
                             getDesiredPreviewFrameSize());
 
-            camera2Fragment.setCamera(cameraId);
+            camera2Fragment.setCamera("1");
             fragment = camera2Fragment;
         } else {
             fragment = new LegacyCameraConnectionFragment(this, getLayoutId());

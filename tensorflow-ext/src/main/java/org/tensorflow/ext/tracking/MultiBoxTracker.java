@@ -157,7 +157,9 @@ public class MultiBoxTracker {
     public void addDrawRectListener(OnDrawRectListener listener) {
         onDrawRectCallbacks.add(listener);
     }
-
+    public boolean containsDrawRectListener(OnDrawRectListener listener) {
+        return onDrawRectCallbacks.contains(listener);
+    }
     public void removeDrawRectListener(OnDrawRectListener listener) {
         onDrawRectCallbacks.remove(listener);
     }
